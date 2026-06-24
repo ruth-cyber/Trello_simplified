@@ -1,6 +1,5 @@
 <script setup>
 import { ref } from 'vue'
-import { useAuth } from '../composables/useAuth.ts'
 const { user, fetchWithAuth } = useAuth()
 const form = ref({ name: user.value?.name, email: user.value?.email })
 const message = ref('')

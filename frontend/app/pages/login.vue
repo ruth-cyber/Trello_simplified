@@ -1,6 +1,5 @@
 <script setup>
 import { ref } from 'vue'
-import { useAuth } from '../composables/useAuth.ts'
 const { login } = useAuth()
 const form = ref({ email: '', password: '' })
 const errorMessage = ref('')

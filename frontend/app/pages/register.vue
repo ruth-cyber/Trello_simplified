@@ -1,5 +1,4 @@
 <script setup>
-import {useAuth} from '../composables/useAuth.ts'
 const { register } = useAuth()
 
 const form = ref({
