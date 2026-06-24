@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ProjectController;
 
 // Routes publiques
 Route::post('/register', [AuthController::class, 'register']);
@@ -15,6 +16,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Route spécifique pour le dashboard
     Route::get('/dashboard', [ProjectController::class, 'dashboard']);
     
+    
     // Routes automatiques pour le CRUD des projets
-    Route::apiResource('projects', ProjectController::class);
+
+    Route::get('/projects', [ProjectController::class, 'index']);
+    Route::post('/projects', [ProjectController::class, 'store']);
 });
