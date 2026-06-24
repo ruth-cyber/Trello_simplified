@@ -1,3 +1,9 @@
+// ce composable gère l'authentification de l'utilisateur, 
+// y compris la connexion, l'inscription, la déconnexion et
+//  la récupération des informations de l'utilisateur connecté.
+//  Il utilise les cookies pour stocker le token d'authentification 
+// et un état global pour stocker 
+// les informations de l'utilisateur.
 import { computed } from 'vue'
 
 // @ts-ignore
