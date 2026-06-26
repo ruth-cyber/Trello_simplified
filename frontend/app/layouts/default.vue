@@ -87,11 +87,13 @@
         <slot />
       </main>
     </div>
+    <ToastContainer />
   </div>
 </template>
 
 <script setup>
 import { ref, computed } from 'vue'
+import ToastContainer from '~/components/ToastContainer.vue'
 const { logout, user } = useAuth()
 const sidebarCollapsed = ref(false)
 
