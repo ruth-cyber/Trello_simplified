@@ -1,13 +1,5 @@
 <script setup>
 import { ref, onMounted, computed, nextTick } from 'vue'
-
-useHead({
-  script: [
-    {
-      src: 'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js'
-    }
-  ]
-})
 definePageMeta({ middleware: 'auth' })
 const { user, fetchWithAuth } = useAuth()
 
@@ -39,10 +31,7 @@ const todoTasks = computed(() =>
 
 const renderCharts = async () => {
   await nextTick()
-  if (typeof Chart === 'undefined') {
-    setTimeout(renderCharts, 100)
-    return
-  }
+  const { default: Chart } = await import('chart.js/auto')
 
   if (donutChartInstance) {
     donutChartInstance.destroy()
@@ -325,92 +314,6 @@ onMounted(initData)
   </NuxtLayout>
 </template>
 
-<script>
-export default {
-  mounted() {
-    this.$nextTick(() => {
-      setTimeout(() => {
-        const stats = this.stats
-        const tasksByPriority = this.tasksByPriority
-
-        const todo = stats.tasks - stats.done - stats.inProgress
-
-        // Donut chart
-        const donutCtx = document.getElementById('donutChart')
-        if (donutCtx) {
-          new Chart(donutCtx, {
-            type: 'doughnut',
-            data: {
-              labels: ['À faire', 'En cours', 'Terminées'],
-              datasets: [{
-                data: [todo < 0 ? 0 : todo, stats.inProgress, stats.done],
-                backgroundColor: ['#4f7fe8', '#f59e0b', '#10b981'],
-                borderWidth: 0,
-                hoverOffset: 6
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              cutout: '68%',
-              plugins: {
-                legend: { display: false },
-                tooltip: {
-                  callbacks: {
-                    label: (ctx) => ` ${ctx.label} : ${ctx.raw} tâche(s)`
-                  }
-                }
-              }
-            }
-          })
-        }
-
-        // Bar chart
-        const barCtx = document.getElementById('barChart')
-        if (barCtx) {
-          barChartInstance = new Chart(barCtx, {
-            type: 'bar',
-            data: {
-              labels: ['Haute', 'Moyenne', 'Faible'],
-              datasets: [{
-                data: [
-                  tasksByPriority.value.high,
-                  tasksByPriority.value.medium,
-                  tasksByPriority.value.low
-                ],
-                backgroundColor: ['#fecaca', '#fde68a', '#a7f3d0'],
-                borderColor: ['#f87171', '#fbbf24', '#34d399'],
-                borderWidth: 2,
-                borderRadius: 8,
-                borderSkipped: false
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { display: false } },
-              scales: {
-                x: {
-                  grid: { display: false },
-                  ticks: { font: { size: 12 }, color: '#8a97b0' },
-                  border: { display: false }
-                },
-                y: {
-                  grid: { color: '#f0f4ff', drawBorder: false },
-                  ticks: { font: { size: 12 }, color: '#8a97b0', stepSize: 1 },
-                  border: { display: false },
-                  beginAtZero: true
-                }
-              }
-            }
-          })
-        }
-      })
-    })
-  }
-};
-</script>
-
 <style scoped>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -532,7 +435,13 @@ export default {
 .view-all-link:hover { text-decoration: underline; }
 
 /* Donut */
-.donut-wrap { }
+.donut-wrap {
+  display: flex;
+  gap: 24px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
 .donut-legend {
   display: flex;
   flex-direction: column;

@@ -5,14 +5,17 @@ namespace App\Http\Controllers;
 use App\Models\Project;
 use App\Models\Task;
 use Illuminate\Http\Request;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class TaskController extends Controller
-{
+{use AuthorizesRequests;
     // 1. Récupérer toutes les tâches de l'utilisateur connecté
     public function index(Request $request)
     {
         $tasks = Task::whereHas('project', function ($query) use ($request) {
-            $query->where('user_id', $request->user()->id);
+            $query->whereHas('users', function ($query) use ($request) {
+                $query->where('user_id', $request->user()->id);
+            });
         })->get();
 
         return response()->json($tasks, 200);
@@ -31,6 +34,7 @@ class TaskController extends Controller
     public function store(Request $request, $projectId)
     {
         $project = $request->user()->projects()->findOrFail($projectId);
+        $this->authorize('manageTasks', $project); // Bloque les simples 'viewers'
 
         $fields = $request->validate([
             'title' => 'required|string|max:255',
@@ -47,12 +51,14 @@ class TaskController extends Controller
         return response()->json($task, 201);
     }
 
-    // 3. Mettre à jour le statut ou les infos d'une tâche (Utile pour le Drag & Drop du Kanban)
+    // 4. Mettre à jour le statut ou les infos d'une tâche (Utile pour le Drag & Drop du Kanban)
     public function update(Request $request, $id)
     {
-        // On cherche la tâche à travers les projets de l'utilisateur pour la sécurité
+        // CORRECTION : On passe par whereHas('users') car la colonne user_id est dans la table pivot
         $task = Task::whereHas('project', function ($query) use ($request) {
-            $query->where('user_id', $request->user()->id);
+            $query->whereHas('users', function ($q) use ($request) {
+                $q->where('user_id', $request->user()->id);
+            });
         })->findOrFail($id);
 
         $fields = $request->validate([
@@ -68,11 +74,14 @@ class TaskController extends Controller
         return response()->json($task, 200);
     }
 
-    // 4. Supprimer une tâche
+    // 5. Supprimer une tâche
     public function destroy(Request $request, $id)
     {
+        // CORRECTION : Idem ici pour la suppression sécurisée
         $task = Task::whereHas('project', function ($query) use ($request) {
-            $query->where('user_id', $request->user()->id);
+            $query->whereHas('users', function ($q) use ($request) {
+                $q->where('user_id', $request->user()->id);
+            });
         })->findOrFail($id);
 
         $task->delete();

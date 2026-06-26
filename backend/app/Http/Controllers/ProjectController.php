@@ -35,8 +35,9 @@ class ProjectController extends Controller
     // 2. Liste des projets
     public function index(Request $request)
     {
-        return response()->json($request->user()->projects, 200);
-    }
+$projects = $request->user()->projects;
+
+    return response()->json($projects);    }
 
     // 3. Créer un projet
     public function store(Request $request)
@@ -46,17 +47,26 @@ class ProjectController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        $project = $request->user()->projects()->create($fields);
+        $project = Project::create([
+            'title' => $fields['title'],
+            'description' => $fields['description'] ?? null,
+        ]);
 
-        return response()->json($project, 201);
+        $request->user()->projects()->attach($project->id, ['role' => 'owner']);
+
+        return response()->json([
+            'message' => 'Projet créé avec succès.',
+            'project' => $project
+        ], 201);
     }
 
     // 4. Détails d'un projet
-    public function show(Request $request, $id)
-    {
-        $project = $request->user()->projects()->findOrFail($id);
-        return response()->json($project, 200);
-    }
+ public function show(Request $request, $id)
+{
+    $project = $request->user()->projects()->findOrFail($id);
+
+    return response()->json($project, 200);
+}
 
     // 5. Modifier un projet
     public function update(Request $request, $id)
@@ -74,19 +84,12 @@ class ProjectController extends Controller
     }
 
     // 6. Supprimer un projet (avec contrainte du cahier des charges)
-    public function destroy(Request $request, $id)
-    {
-        $project = $request->user()->projects()->withCount('tasks')->findOrFail($id);
+   public function destroy(Request $request, $id)
+{
+    $project = Project::findOrFail($id);
+    $this->authorize('delete', $project); // Bloque si pas owner
 
-        // Règle : Supprimer si aucune tâche n'est liée
-        if ($project->tasks_count > 0) {
-            return response()->json([
-                'message' => 'Impossible de supprimer un projet contenant des tâches actives.'
-            ], 400);
-        }
-
-        $project->delete();
-
-        return response()->json(['message' => 'Projet supprimé avec succès.'], 200);
-    }
+    $project->delete();
+    return response()->json(['message' => 'Projet supprimé avec succès.']);
+}
 }
