@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Project;
 use Illuminate\Http\Request;
+use App\Models\User;
+use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
 class ProjectController extends Controller
 {
+    use AuthorizesRequests;
     // 1. Récupérer les statistiques pour le Tableau de Bord
     public function dashboard(Request $request)
     {
@@ -91,5 +94,34 @@ $projects = $request->user()->projects;
 
     $project->delete();
     return response()->json(['message' => 'Projet supprimé avec succès.']);
+}
+public function invite(Request $request, $id)
+{
+    // 1. Trouver le projet et s'assurer que l'utilisateur connecté est bien le 'owner' (via la Policy)
+    $project = Project::findOrFail($id);
+    $this->authorize('update', $project); 
+
+    // 2. Valider les données reçues
+    $fields = $request->validate([
+        'email' => 'required|email|exists:users,email', // L'email doit exister dans la table users
+        'role' => 'required|in:member,viewer'
+    ], [
+        'email.exists' => "Cet utilisateur n'a pas encore de compte sur l'application."
+    ]);
+
+    // 3. Récupérer l'utilisateur à inviter
+    $userToInvite = User::where('email', $fields['email'])->first();
+
+    // 4. Vérifier si l'utilisateur n'est pas déjà membre du projet
+    if ($project->users()->where('user_id', $userToInvite->id)->exists()) {
+        return response()->json(['message' => 'Cet utilisateur fait déjà partie du projet.'], 422);
+    }
+
+    // 5. Lier l'utilisateur au projet via la table pivot
+    $project->users()->attach($userToInvite->id, ['role' => $fields['role']]);
+
+    return response()->json([
+        'message' => "L'utilisateur a été ajouté au projet avec succès."
+    ], 200);
 }
 }

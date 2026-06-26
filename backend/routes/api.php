@@ -28,4 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/projects/{project}/tasks', [TaskController::class, 'store']);
     Route::put('/tasks/{id}', [TaskController::class, 'update']);
     Route::delete('/tasks/{id}', [TaskController::class, 'destroy']);
+    // Route pour récupérer inviter un utilisateur à un projet
+    Route::post('/projects/{project}/invite', [ProjectController::class, 'invite']);
+    Route::delete('/projects/{project}/remove-user/{user}', [ProjectController::class, 'removeUser']);
 });
