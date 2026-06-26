@@ -61,18 +61,20 @@ export const useAuth = () => {
       throw error.data
     }
   }
-
-  const logout = async () => {
-    try {
-      await fetchWithAuth('/logout', { method: 'POST' })
-    } catch (e) {
-    } finally {
-      token.value = null
-      user.value = null
-      // @ts-ignore
-      navigateTo('/login')
-    }
+const logout = async () => {
+  try {
+    await fetchWithAuth('/logout', { method: 'POST' })
+  } catch (err) {
+    console.error("Erreur lors de la déconnexion back-end", err)
+  } finally {
+    // Dans tous les cas, on vide le cookie et on redirige
+    const token = useCookie('auth_token')
+    token.value = null
+    
+    // Redirection forcée vers la page de connexion
+    navigateTo('/login')
   }
+}
 
   const fetchUser = async () => {
     if (token.value && !user.value) {
