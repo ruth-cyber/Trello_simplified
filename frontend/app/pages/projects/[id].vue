@@ -11,6 +11,8 @@ const project = ref(null)
 const projectRole = ref('viewer')
 const tasks = ref([])
 const showTaskForm = ref(false)
+const showProjectForm = ref(false)
+const editProject = ref({ title: '', description: '' })
 
 const searchQuery = ref('')
 const filterPriority = ref('')
@@ -30,6 +32,10 @@ const initData = async () => {
     const projectResponse = await fetchWithAuth(`/projects/${projectId}`)
     project.value = projectResponse
     projectRole.value = projectResponse.pivot?.role || 'viewer'
+    editProject.value = {
+      title: projectResponse.title || '',
+      description: projectResponse.description || ''
+    }
     tasks.value = await fetchWithAuth(`/projects/${projectId}/tasks`)
   } catch (err) {
     console.error('Erreur de chargement du projet:', err)
@@ -99,6 +105,23 @@ const addTask = async () => {
     addToast("Erreur lors de l'ajout de la tâche.", 'error')
   }
 }
+
+const updateProject = async () => {
+  if (projectRole.value !== 'owner') return
+  try {
+    const updated = await fetchWithAuth(`/projects/${projectId}`, {
+      method: 'PUT',
+      body: editProject.value
+    })
+    project.value = updated
+    showProjectForm.value = false
+    addToast('Projet mis à jour avec succès !', 'success')
+  } catch (err) {
+    console.error('Erreur de mise à jour du projet :', err)
+    addToast('Impossible de mettre à jour le projet.', 'error')
+  }
+}
+
 const deleteTask = async (taskId) => {
   if (projectRole.value === 'viewer') return
   if (!confirm('Supprimer définitivement cette tâche ?')) return
@@ -150,14 +173,48 @@ onMounted(initData)
         </p>
       </div>
 
-      <button
-        v-if="projectRole !== 'viewer'"
-        @click="showTaskForm = !showTaskForm"
-        class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/10 hover:bg-indigo-700 active:scale-95 transition-all duration-150"
-      >
-        {{ showTaskForm ? 'Annuler' : 'Nouvelle tâche' }}
-      </button>
+      <div class="flex items-center gap-3">
+        <button
+          v-if="projectRole === 'owner'"
+          @click="showProjectForm = !showProjectForm"
+          class="bg-slate-800 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-lg shadow-slate-900/10 hover:bg-slate-900 active:scale-95 transition-all duration-150"
+        >
+          {{ showProjectForm ? 'Annuler' : 'Modifier le projet' }}
+        </button>
+        <button
+          v-if="projectRole !== 'viewer'"
+          @click="showTaskForm = !showTaskForm"
+          class="bg-indigo-600 text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/10 hover:bg-indigo-700 active:scale-95 transition-all duration-150"
+        >
+          {{ showTaskForm ? 'Annuler' : 'Nouvelle tâche' }}
+        </button>
+      </div>
     </div>
+
+    <!-- ── FORMULAIRE DE MODIFICATION DE PROJET ── -->
+    <Transition name="slide-down">
+      <div v-if="showProjectForm && projectRole === 'owner'"
+        class="bg-white p-6 rounded-2xl shadow-xl border border-slate-100 mb-6 max-w-xl"
+      >
+        <h3 class="font-bold text-slate-800 text-base mb-4 tracking-tight">Modifier le projet</h3>
+        <form @submit.prevent="updateProject" class="space-y-4">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Titre du projet</label>
+            <input v-model="editProject.title" type="text" required
+              class="w-full border border-slate-200 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/10 transition" />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-1">Description</label>
+            <textarea v-model="editProject.description" rows="3"
+              class="w-full border border-slate-200 px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-indigo-600 focus:ring-2 focus:ring-indigo-600/10 transition"></textarea>
+          </div>
+          <div class="flex gap-3 flex-wrap">
+            <button type="submit" class="bg-slate-900 text-white px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-800 transition">Enregistrer</button>
+            <button type="button" @click="showProjectForm = false" class="bg-slate-100 text-slate-700 px-5 py-2.5 rounded-xl text-sm font-semibold hover:bg-slate-200 transition">Annuler</button>
+          </div>
+        </form>
+      </div>
+    </Transition>
 
     <!-- ── FORMULAIRE NOUVELLE TÂCHE ── -->
     <Transition name="slide-down">

@@ -75,6 +75,7 @@ $projects = $request->user()->projects;
     public function update(Request $request, $id)
     {
         $project = $request->user()->projects()->findOrFail($id);
+        $this->authorize('update', $project);
 
         $fields = $request->validate([
             'title' => 'required|string|max:255',
